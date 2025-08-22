@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings - Stadium Registration</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/matches">
+                <i class="fas fa-futbol"></i> Stadium Registration
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/matches">Matches</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/bookings">My Bookings</a>
+                    </li>
+                    <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                        <a class="nav-link" href="/admin">Admin</a>
+                    </li>
+                </ul>
+
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user"></i> <span sec:authentication="name"></span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/bookings">My Bookings</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <form th:action="@{/logout}" method="post" class="d-inline">
+                                    <button type="submit" class="dropdown-item">Logout</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        <!-- Flash Messages -->
+        <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle"></i> <span th:text="${success}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle"></i> <span th:text="${error}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-ticket-alt"></i> My Bookings</h1>
+            <a href="/matches" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Book New Match
+            </a>
+        </div>
+
+        <div th:if="${#lists.isEmpty(bookings)}" class="text-center py-5">
+            <i class="fas fa-ticket-alt fa-3x text-muted mb-3"></i>
+            <h3 class="text-muted">No bookings yet</h3>
+            <p class="text-muted">Book your first match ticket to see it here!</p>
+            <a href="/matches" class="btn btn-primary">
+                <i class="fas fa-search"></i> Browse Matches
+            </a>
+        </div>
+
+        <div th:if="${!#lists.isEmpty(bookings)}">
+            <div class="row">
+                <div class="col-12" th:each="booking : ${bookings}">
+                    <div class="card mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-0" th:text="${booking.footballMatch.matchTitle}">Team A vs Team B</h5>
+                                <small class="text-muted">
+                                    Confirmation: <strong th:text="${booking.confirmationCode}">FB123456789</strong>
+                                </small>
+                            </div>
+                            <span class="badge"
+                                  th:classappend="${booking.status.name() == 'CONFIRMED'} ? 'bg-success' : (${booking.status.name() == 'CANCELLED'} ? 'bg-danger' : 'bg-warning')"
+                                  th:text="${booking.status}">CONFIRMED</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="mb-2">
+                                        <i class="fas fa-map-marker-alt text-primary"></i>
+                                        <strong th:text="${booking.footballMatch.stadium.name}">Stadium Name</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <i class="fas fa-city text-muted"></i>
+                                        <span th:text="${booking.footballMatch.stadium.city}">City</span>
+                                    </div>
+                                    <div th:if="${booking.stadiumSection}" class="mb-2">
+                                        <i class="fas fa-chair text-info"></i>
+                                        <strong>Section:</strong> <span th:text="${booking.stadiumSection.sectionName}">Section A</span>
+                                        <span class="badge ms-1"
+                                              th:classappend="${booking.stadiumSection.sectionType.name() == 'VIP'} ? 'bg-purple' : (${booking.stadiumSection.sectionType.name() == 'PREMIUM'} ? 'bg-primary' : (${booking.stadiumSection.sectionType.name() == 'STANDARD'} ? 'bg-success' : 'bg-info'))"
+                                              th:text="${booking.stadiumSection.sectionType}">VIP</span>
+                                    </div>
+                                    <div th:unless="${booking.stadiumSection}" class="mb-2">
+                                        <i class="fas fa-chair text-secondary"></i>
+                                        <em class="text-muted">Any available section</em>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-2">
+                                        <i class="fas fa-calendar text-info"></i>
+                                        <span th:text="${#temporals.format(booking.footballMatch.matchDate, 'dd MMM yyyy')}">Date</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <i class="fas fa-clock text-info"></i>
+                                        <span th:text="${#temporals.format(booking.footballMatch.matchDate, 'HH:mm')}">Time</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="mb-2">
+                                        <i class="fas fa-users text-secondary"></i>
+                                        <span th:text="${booking.numberOfSeats}">2</span> seats
+                                    </div>
+                                    <div class="mb-2">
+                                        <i class="fas fa-dollar-sign text-success"></i>
+                                        <span th:text="${booking.totalPrice}">$50.00</span>
+                                    </div>
+                                    <div th:if="${booking.stadiumSection != null and booking.stadiumSection.priceMultiplier != 1.0}" class="mb-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-star"></i>
+                                            <span th:text="${booking.stadiumSection.priceMultiplier}">1.5</span>x price
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="mb-2">
+                                        <small class="text-muted">Booked on:</small><br>
+                                        <span th:text="${#temporals.format(booking.bookingDate, 'dd MMM yyyy')}">Date</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <div th:if="${booking.status.name() == 'CONFIRMED' && booking.footballMatch.matchDate.isAfter(T(java.time.LocalDateTime).now())}">
+                                        <form th:action="@{/bookings/cancel/{id}(id=${booking.id})}" method="post"
+                                              onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                <i class="fas fa-times"></i> Cancel
+                                            </button>
+                                        </form>
+                                    </div>
+                                    <div th:if="${booking.footballMatch.matchDate.isBefore(T(java.time.LocalDateTime).now())}"
+                                         class="text-muted">
+                                        <small><i class="fas fa-check"></i> Completed</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

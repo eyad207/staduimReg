@@ -19,67 +19,130 @@
                         <div th:if="${error}" class="alert alert-danger" role="alert">
                             <i class="fas fa-exclamation-circle"></i> <span th:text="${error}"></span>
                         </div>
+                        <div th:if="${success}" class="alert alert-success" role="alert">
+                            <i class="fas fa-check-circle"></i> <span th:text="${success}"></span>
+                        </div>
 
-                        <form th:action="@{/register}" th:object="${user}" method="post">
+                        <form th:action="@{/register}" th:object="${user}" method="post" novalidate>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">First Name</label>
-                                    <input type="text" class="form-control" th:field="*{firstName}" required>
-                                    <div th:if="${#fields.hasErrors('firstName')}" class="text-danger">
-                                        <small th:errors="*{firstName}"></small>
+                                    <label for="firstName" class="form-label">First Name <span class="text-danger">*</span></label>
+                                    <input type="text" id="firstName" class="form-control" th:field="*{firstName}"
+                                           th:classappend="${#fields.hasErrors('firstName')} ? 'is-invalid' : ''"
+                                           required minlength="2" maxlength="50">
+                                    <div th:if="${#fields.hasErrors('firstName')}" class="invalid-feedback">
+                                        <span th:errors="*{firstName}"></span>
                                     </div>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Last Name</label>
-                                    <input type="text" class="form-control" th:field="*{lastName}" required>
-                                    <div th:if="${#fields.hasErrors('lastName')}" class="text-danger">
-                                        <small th:errors="*{lastName}"></small>
+                                    <label for="lastName" class="form-label">Last Name <span class="text-danger">*</span></label>
+                                    <input type="text" id="lastName" class="form-control" th:field="*{lastName}"
+                                           th:classappend="${#fields.hasErrors('lastName')} ? 'is-invalid' : ''"
+                                           required minlength="2" maxlength="50">
+                                    <div th:if="${#fields.hasErrors('lastName')}" class="invalid-feedback">
+                                        <span th:errors="*{lastName}"></span>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label">Username</label>
-                                <input type="text" class="form-control" th:field="*{username}" required>
-                                <div th:if="${#fields.hasErrors('username')}" class="text-danger">
-                                    <small th:errors="*{username}"></small>
+                                <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
+                                <input type="text" id="username" class="form-control" th:field="*{username}"
+                                       th:classappend="${#fields.hasErrors('username')} ? 'is-invalid' : ''"
+                                       required minlength="3" maxlength="50" pattern="[a-zA-Z0-9_.-]+">
+                                <div th:if="${#fields.hasErrors('username')}" class="invalid-feedback">
+                                    <span th:errors="*{username}"></span>
+                                </div>
+                                <small class="form-text text-muted">Username must be 3-50 characters (letters, numbers, underscore, dash, dot only)</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" id="email" class="form-control" th:field="*{email}"
+                                       th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''"
+                                       required maxlength="100">
+                                <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback">
+                                    <span th:errors="*{email}"></span>
                                 </div>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" th:field="*{email}" required>
-                                <div th:if="${#fields.hasErrors('email')}" class="text-danger">
-                                    <small th:errors="*{email}"></small>
+                                <label for="phoneNumber" class="form-label">Phone Number <small class="text-muted">(Optional)</small></label>
+                                <input type="tel" id="phoneNumber" class="form-control" th:field="*{phoneNumber}"
+                                       th:classappend="${#fields.hasErrors('phoneNumber')} ? 'is-invalid' : ''"
+                                       maxlength="20" pattern="[\+]?[0-9\s\-\(\)]*">
+                                <div th:if="${#fields.hasErrors('phoneNumber')}" class="invalid-feedback">
+                                    <span th:errors="*{phoneNumber}"></span>
                                 </div>
+                                <small class="form-text text-muted">Format: +1234567890 or (123) 456-7890</small>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label">Phone Number (Optional)</label>
-                                <input type="tel" class="form-control" th:field="*{phoneNumber}">
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">Password</label>
-                                <input type="password" class="form-control" th:field="*{password}" required>
-                                <div th:if="${#fields.hasErrors('password')}" class="text-danger">
-                                    <small th:errors="*{password}"></small>
+                                <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="password" id="password" class="form-control" th:field="*{password}"
+                                           th:classappend="${#fields.hasErrors('password')} ? 'is-invalid' : ''"
+                                           required minlength="6" maxlength="100">
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                        <i class="fas fa-eye" id="toggleIcon"></i>
+                                    </button>
+                                    <div th:if="${#fields.hasErrors('password')}" class="invalid-feedback">
+                                        <span th:errors="*{password}"></span>
+                                    </div>
                                 </div>
                                 <small class="form-text text-muted">Password must be at least 6 characters long</small>
                             </div>
 
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-user-plus"></i> Register
-                            </button>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-user-plus"></i> Register
+                                </button>
+                            </div>
                         </form>
                     </div>
                     <div class="card-footer text-center">
-                        <p class="mb-0">Already have an account? <a href="/login">Login here</a></p>
-                        <a href="/matches" class="text-muted">← Back to matches</a>
+                        <p class="mb-0">Already have an account? <a href="/login" class="text-decoration-none">Login here</a></p>
+                        <a href="/matches" class="text-muted text-decoration-none">← Back to matches</a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle password visibility
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const password = document.getElementById('password');
+            const toggleIcon = document.getElementById('toggleIcon');
+
+            if (password.type === 'password') {
+                password.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                password.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        });
+
+        // Form validation feedback
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                var forms = document.getElementsByTagName('form');
+                Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+    </script>
 </body>
 </html>

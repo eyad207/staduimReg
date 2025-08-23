@@ -48,7 +48,10 @@ public class UserService implements UserDetailsService {
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRole(User.Role.USER);
+        // Only set role to USER if no role is specified (preserve existing role)
+        if (user.getRole() == null) {
+            user.setRole(User.Role.USER);
+        }
         return userRepository.save(user);
     }
 
@@ -60,16 +63,38 @@ public class UserService implements UserDetailsService {
         return userRepository.findByEmail(email);
     }
 
-    public User save(User user) {
-        return userRepository.save(user);
-    }
-
-    public List<User> findAll() {
+    public List<User> findAllUsers() {
         return userRepository.findAll();
     }
 
     public Optional<User> findById(Long id) {
         return userRepository.findById(id);
+    }
+
+    public User saveUser(User user) {
+        return userRepository.save(user);
+    }
+
+    public void deleteUser(Long id) {
+        userRepository.deleteById(id);
+    }
+
+    public long getTotalUsersCount() {
+        return userRepository.count();
+    }
+
+    public List<User> findRecentUsers(int limit) {
+        // Using the limit parameter properly by limiting the query result
+        return userRepository.findTop10ByOrderByCreatedAtDesc().stream()
+                .limit(limit)
+                .toList();
+    }
+
+    public User updateUserRole(Long userId, User.Role role) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setRole(role);
+        return userRepository.save(user);
     }
 
     public boolean existsByUsername(String username) {
@@ -78,5 +103,9 @@ public class UserService implements UserDetailsService {
 
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
+    }
+
+    public String encodePassword(String password) {
+        return passwordEncoder.encode(password);
     }
 }

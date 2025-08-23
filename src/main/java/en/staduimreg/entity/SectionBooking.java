@@ -1,7 +1,9 @@
 package en.staduimreg.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "section_bookings")
@@ -11,57 +13,52 @@ public class SectionBooking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "football_match_id", nullable = false)
-    private FootballMatch footballMatch;
+    @JoinColumn(name = "booking_id", nullable = false)
+    private Booking booking;
 
+    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "stadium_section_id", nullable = false)
     private StadiumSection stadiumSection;
 
+    @NotNull
     @PositiveOrZero
-    @Column(name = "booked_seats", nullable = false)
-    private Integer bookedSeats = 0;
+    @Column(name = "tickets_booked", nullable = false)
+    private Integer ticketsBooked;
+
+    @NotNull
+    @PositiveOrZero
+    @Column(name = "price_per_ticket", nullable = false, precision = 10, scale = 2)
+    private BigDecimal pricePerTicket;
+
+    @NotNull
+    @PositiveOrZero
+    @Column(name = "total_price", nullable = false, precision = 10, scale = 2)
+    private BigDecimal totalPrice;
 
     // Constructors
     public SectionBooking() {}
 
-    public SectionBooking(FootballMatch footballMatch, StadiumSection stadiumSection) {
-        this.footballMatch = footballMatch;
+    public SectionBooking(Booking booking, StadiumSection stadiumSection, Integer ticketsBooked, BigDecimal pricePerTicket) {
+        this.booking = booking;
         this.stadiumSection = stadiumSection;
-        this.bookedSeats = 0;
+        this.ticketsBooked = ticketsBooked;
+        this.pricePerTicket = pricePerTicket;
+        this.totalPrice = pricePerTicket.multiply(BigDecimal.valueOf(ticketsBooked));
     }
 
-    // Helper methods
-    public Integer getAvailableSeats() {
-        return stadiumSection.getTotalSeats() - bookedSeats;
-    }
-
-    public boolean hasAvailableSeats(int requestedSeats) {
-        return getAvailableSeats() >= requestedSeats;
-    }
-
-    public void bookSeats(int seats) {
-        if (!hasAvailableSeats(seats)) {
-            throw new IllegalStateException("Not enough available seats in section " + stadiumSection.getSectionName());
-        }
-        this.bookedSeats += seats;
-    }
-
-    public void releaseSeats(int seats) {
-        this.bookedSeats = Math.max(0, this.bookedSeats - seats);
-    }
-
-    // Getters and Setters
+    // Getters and Setters - keeping only the essential ones used in the codebase
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public FootballMatch getFootballMatch() { return footballMatch; }
-    public void setFootballMatch(FootballMatch footballMatch) { this.footballMatch = footballMatch; }
+    public Booking getBooking() { return booking; }
+    public void setBooking(Booking booking) { this.booking = booking; }
 
+    // Adding getters to fix "assigned but never accessed" warnings
     public StadiumSection getStadiumSection() { return stadiumSection; }
-    public void setStadiumSection(StadiumSection stadiumSection) { this.stadiumSection = stadiumSection; }
-
-    public Integer getBookedSeats() { return bookedSeats; }
-    public void setBookedSeats(Integer bookedSeats) { this.bookedSeats = bookedSeats; }
+    public Integer getTicketsBooked() { return ticketsBooked; }
+    public BigDecimal getPricePerTicket() { return pricePerTicket; }
+    public BigDecimal getTotalPrice() { return totalPrice; }
 }

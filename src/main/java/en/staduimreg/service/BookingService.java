@@ -1,111 +1,150 @@
 package en.staduimreg.service;
 
-import en.staduimreg.entity.Booking;
-import en.staduimreg.entity.FootballMatch;
-import en.staduimreg.entity.User;
-import en.staduimreg.entity.StadiumSection;
+import en.staduimreg.entity.*;
 import en.staduimreg.repository.BookingRepository;
+import en.staduimreg.repository.SectionBookingRepository;
+import en.staduimreg.repository.StadiumSectionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
 @Transactional
 public class BookingService {
 
-    @Autowired
-    private BookingRepository bookingRepository;
+    private final BookingRepository bookingRepository;
+    private final SectionBookingRepository sectionBookingRepository;
+    private final StadiumSectionRepository stadiumSectionRepository;
 
     @Autowired
-    private FootballMatchService footballMatchService;
-
-    @Autowired
-    private StadiumSectionService stadiumSectionService;
-
-    // Original booking method (without section selection)
-    public Booking createBooking(User user, FootballMatch footballMatch, int numberOfSeats) {
-        // Check if enough seats are available
-        if (!footballMatch.hasAvailableSeats(numberOfSeats)) {
-            throw new RuntimeException("Not enough available seats. Available: " + footballMatch.getAvailableSeats());
-        }
-
-        // Reserve seats in the match
-        footballMatchService.reserveSeats(footballMatch.getId(), numberOfSeats);
-
-        // Create and save booking
-        Booking booking = new Booking(user, footballMatch, numberOfSeats);
-        return bookingRepository.save(booking);
+    public BookingService(BookingRepository bookingRepository,
+                         SectionBookingRepository sectionBookingRepository,
+                         StadiumSectionRepository stadiumSectionRepository) {
+        this.bookingRepository = bookingRepository;
+        this.sectionBookingRepository = sectionBookingRepository;
+        this.stadiumSectionRepository = stadiumSectionRepository;
     }
 
-    // New booking method with section selection
-    public Booking createBookingWithSection(User user, FootballMatch footballMatch, StadiumSection stadiumSection, int numberOfSeats) {
-        // Check if enough seats are available in the specific section
-        if (!stadiumSectionService.canBookSeatsInSection(footballMatch, stadiumSection, numberOfSeats)) {
-            int available = stadiumSectionService.getAvailableSeatsInSection(footballMatch, stadiumSection);
-            throw new RuntimeException("Not enough available seats in " + stadiumSection.getSectionName() +
-                                     ". Available: " + available);
+    public Booking createBooking(User user, FootballMatch match, Map<Long, Integer> sectionTickets) {
+        // Calculate total amount and tickets
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        int totalTickets = 0;
+
+        for (Map.Entry<Long, Integer> entry : sectionTickets.entrySet()) {
+            Long sectionId = entry.getKey();
+            Integer tickets = entry.getValue();
+
+            StadiumSection section = stadiumSectionRepository.findById(sectionId)
+                .orElseThrow(() -> new RuntimeException("Stadium section not found"));
+
+            // Base price calculation (you might want to add a base price field to matches)
+            BigDecimal basePrice = BigDecimal.valueOf(50.00); // Default base price
+            BigDecimal sectionPrice = basePrice.multiply(BigDecimal.valueOf(section.getPriceMultiplier()));
+            BigDecimal sectionTotal = sectionPrice.multiply(BigDecimal.valueOf(tickets));
+
+            totalAmount = totalAmount.add(sectionTotal);
+            totalTickets += tickets;
         }
 
-        // Reserve seats in the section
-        stadiumSectionService.bookSeatsInSection(footballMatch, stadiumSection, numberOfSeats);
+        // Create main booking
+        Booking booking = new Booking(user, match, totalAmount, totalTickets);
+        booking.setStatus(Booking.BookingStatus.PENDING);
+        booking = bookingRepository.save(booking);
 
-        // Also update the overall match seat count
-        footballMatchService.reserveSeats(footballMatch.getId(), numberOfSeats);
+        // Create section bookings
+        for (Map.Entry<Long, Integer> entry : sectionTickets.entrySet()) {
+            Long sectionId = entry.getKey();
+            Integer tickets = entry.getValue();
 
-        // Create and save booking with section information
-        Booking booking = new Booking(user, footballMatch, stadiumSection, numberOfSeats);
-        return bookingRepository.save(booking);
+            StadiumSection section = stadiumSectionRepository.findById(sectionId).orElseThrow();
+            BigDecimal basePrice = BigDecimal.valueOf(50.00);
+            BigDecimal sectionPrice = basePrice.multiply(BigDecimal.valueOf(section.getPriceMultiplier()));
+
+            SectionBooking sectionBooking = new SectionBooking(booking, section, tickets, sectionPrice);
+            sectionBookingRepository.save(sectionBooking);
+        }
+
+        return booking;
     }
 
-    public void cancelBooking(Long bookingId) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
-
-        if (booking.getStatus() == Booking.BookingStatus.CANCELLED) {
-            throw new RuntimeException("Booking is already cancelled");
-        }
-
-        // Release seats back to the match
-        footballMatchService.releaseSeats(booking.getFootballMatch().getId(), booking.getNumberOfSeats());
-
-        // If booking has a section, release seats from that section too
-        if (booking.getStadiumSection() != null) {
-            stadiumSectionService.releaseSeatsInSection(
-                booking.getFootballMatch(),
-                booking.getStadiumSection(),
-                booking.getNumberOfSeats()
-            );
-        }
-
-        // Update booking status
-        booking.setStatus(Booking.BookingStatus.CANCELLED);
-        bookingRepository.save(booking);
+    public List<Booking> findAllBookings() {
+        return bookingRepository.findAll();
     }
 
-    public List<Booking> getUserBookings(User user) {
+    public List<Booking> findBookingsByUser(User user) {
         return bookingRepository.findByUserOrderByBookingDateDesc(user);
+    }
+
+    public List<Booking> findBookingsByMatch(FootballMatch match) {
+        return bookingRepository.findByMatchOrderByBookingDateDesc(match);
     }
 
     public Optional<Booking> findById(Long id) {
         return bookingRepository.findById(id);
     }
 
-    public Optional<Booking> findByConfirmationCode(String confirmationCode) {
-        return bookingRepository.findByConfirmationCode(confirmationCode);
-    }
-
-    public List<Booking> getAllBookings() {
-        return bookingRepository.findAll();
-    }
-
-    public List<Booking> getBookingsByMatch(FootballMatch footballMatch) {
-        return bookingRepository.findByFootballMatch(footballMatch);
-    }
-
-    public Booking save(Booking booking) {
+    public Booking updateBookingStatus(Long bookingId, Booking.BookingStatus status) {
+        Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new RuntimeException("Booking not found"));
+        booking.setStatus(status);
         return bookingRepository.save(booking);
+    }
+
+    public void deleteBooking(Long id) {
+        bookingRepository.deleteById(id);
+    }
+
+    public long getTotalBookingsCount() {
+        return bookingRepository.count();
+    }
+
+    public BigDecimal getTotalRevenue() {
+        return bookingRepository.findAll().stream()
+            .filter(booking -> booking.getStatus() == Booking.BookingStatus.PAID ||
+                             booking.getStatus() == Booking.BookingStatus.CONFIRMED)
+            .map(Booking::getTotalAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public List<Booking> findRecentBookings(int limit) {
+        return bookingRepository.findTop10ByOrderByBookingDateDesc();
+    }
+
+    public BigDecimal calculateRevenueForMatch(FootballMatch match) {
+        return bookingRepository.findByMatchOrderByBookingDateDesc(match).stream()
+            .filter(booking -> booking.getStatus() == Booking.BookingStatus.PAID ||
+                             booking.getStatus() == Booking.BookingStatus.CONFIRMED)
+            .map(Booking::getTotalAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public int getAvailableSeatsForSection(StadiumSection section, FootballMatch match) {
+        Integer bookedSeats = sectionBookingRepository.sumTicketsByStadiumSectionAndMatch(section, match);
+        return section.getTotalSeats() - (bookedSeats != null ? bookedSeats : 0);
+    }
+
+    public List<Booking> getUserBookings(User user) {
+        return findBookingsByUser(user);
+    }
+
+    public void cancelBooking(Long bookingId) {
+        Booking booking = findById(bookingId)
+            .orElseThrow(() -> new RuntimeException("Booking not found"));
+        booking.setStatus(Booking.BookingStatus.CANCELLED);
+        bookingRepository.save(booking);
+    }
+
+    public Optional<Booking> findByConfirmationCode(String confirmationCode) {
+        return bookingRepository.findByPaymentReference(confirmationCode);
+    }
+
+    public Booking createBookingWithSection(User user, FootballMatch match, StadiumSection section, Integer tickets) {
+        Map<Long, Integer> sectionTickets = Map.of(section.getId(), tickets);
+        return createBooking(user, match, sectionTickets);
     }
 }

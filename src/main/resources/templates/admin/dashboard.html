@@ -1,121 +1,178 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Stadium Registration</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="/matches">
-                <i class="fas fa-futbol"></i> Stadium Registration
-            </a>
-
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/matches">Matches</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/bookings">My Bookings</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/admin">Admin</a>
-                    </li>
-                </ul>
-
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user"></i> <span sec:authentication="name"></span>
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="/bookings">My Bookings</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <form th:action="@{/logout}" method="post" class="d-inline">
-                                    <button type="submit" class="dropdown-item">Logout</button>
-                                </form>
-                            </li>
-                        </ul>
-                    </li>
-                </ul>
+            <a class="navbar-brand" href="/">Stadium Registration</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/matches">Matches</a>
+                <a class="nav-link" href="/admin">Admin</a>
+                <a class="nav-link" href="/logout">Logout</a>
             </div>
         </div>
     </nav>
 
-    <main class="container mt-4">
-        <h1><i class="fas fa-tachometer-alt"></i> Admin Dashboard</h1>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">Admin Dashboard</h1>
 
-        <div class="row mt-4">
-            <div class="col-md-3">
-                <div class="card text-white bg-primary">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4 th:text="${matchCount}">0</h4>
-                                <p class="mb-0">Total Matches</p>
+                <!-- Flash Messages -->
+                <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <span th:text="${success}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+
+                <!-- Statistics Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card text-center bg-primary text-white">
+                            <div class="card-body">
+                                <i class="bi bi-people-fill fs-1"></i>
+                                <h4 th:text="${totalUsers != null ? totalUsers : 0}">0</h4>
+                                <p class="card-text">Total Users</p>
                             </div>
-                            <i class="fas fa-futbol fa-2x"></i>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center bg-success text-white">
+                            <div class="card-body">
+                                <i class="bi bi-ticket-perforated-fill fs-1"></i>
+                                <h4 th:text="${totalBookings != null ? totalBookings : 0}">0</h4>
+                                <p class="card-text">Total Bookings</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center bg-warning text-white">
+                            <div class="card-body">
+                                <i class="bi bi-currency-dollar fs-1"></i>
+                                <h4 th:text="'$' + ${totalRevenue != null ? #numbers.formatDecimal(totalRevenue, 1, 2) : '0.00'}">$0</h4>
+                                <p class="card-text">Total Revenue</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center bg-info text-white">
+                            <div class="card-body">
+                                <i class="bi bi-calendar-event-fill fs-1"></i>
+                                <h4 th:text="${totalMatches != null ? totalMatches : 0}">0</h4>
+                                <p class="card-text">Total Matches</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="col-md-3">
-                <div class="card text-white bg-success">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4 th:text="${stadiumCount}">0</h4>
-                                <p class="mb-0">Total Stadiums</p>
+                <!-- Quick Actions -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Quick Actions</h5>
                             </div>
-                            <i class="fas fa-building fa-2x"></i>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3 mb-2">
+                                        <a href="/admin/users" class="btn btn-outline-primary w-100">
+                                            <i class="bi bi-people"></i> Manage Users
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <a href="/admin/bookings" class="btn btn-outline-success w-100">
+                                            <i class="bi bi-ticket"></i> Manage Bookings
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <a href="/admin/matches/new" class="btn btn-outline-info w-100">
+                                            <i class="bi bi-plus-circle"></i> Add Match
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <a href="/admin/revenue" class="btn btn-outline-warning w-100">
+                                            <i class="bi bi-graph-up"></i> Revenue Report
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Recent Users</h5>
+                            </div>
+                            <div class="card-body">
+                                <div th:if="${recentUsers == null or #lists.isEmpty(recentUsers)}" class="text-muted">
+                                    No recent users
+                                </div>
+                                <div th:if="${recentUsers != null and !#lists.isEmpty(recentUsers)}">
+                                    <div th:each="user : ${recentUsers}" class="d-flex justify-content-between align-items-center mb-2">
+                                        <div>
+                                            <strong th:text="${user.fullName != null ? user.fullName : (user.firstName + ' ' + user.lastName)}">User Name</strong>
+                                            <br>
+                                            <small class="text-muted" th:text="${user.email}">user@email.com</small>
+                                        </div>
+                                        <div>
+                                            <span class="badge bg-secondary" th:text="${user.role != null ? user.role : 'USER'}">USER</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <a href="/admin/users" class="btn btn-sm btn-outline-primary">View All Users</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Recent Bookings</h5>
+                            </div>
+                            <div class="card-body">
+                                <div th:if="${recentBookings == null or #lists.isEmpty(recentBookings)}" class="text-muted">
+                                    No recent bookings
+                                </div>
+                                <div th:if="${recentBookings != null and !#lists.isEmpty(recentBookings)}">
+                                    <div th:each="booking : ${recentBookings}" class="d-flex justify-content-between align-items-center mb-2">
+                                        <div>
+                                            <strong th:text="${booking.match != null and booking.match.homeTeam != null ? (booking.match.homeTeam + ' vs ' + booking.match.awayTeam) : 'Match Details'}">Match Title</strong>
+                                            <br>
+                                            <small class="text-muted" th:text="${booking.user != null and booking.user.fullName != null ? booking.user.fullName : 'Unknown User'}">User Name</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <div th:text="'$' + ${booking.totalAmount != null ? #numbers.formatDecimal(booking.totalAmount, 1, 2) : '0.00'}">$0</div>
+                                            <span class="badge" th:class="${'bg-' + (booking.status != null and booking.status.name() == 'PAID' ? 'success' :
+                                                                               booking.status != null and booking.status.name() == 'CONFIRMED' ? 'primary' :
+                                                                               booking.status != null and booking.status.name() == 'PENDING' ? 'warning' : 'danger')}"
+                                                  th:text="${booking.status != null ? booking.status : 'UNKNOWN'}">Status</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <a href="/admin/bookings" class="btn btn-sm btn-outline-success">View All Bookings</a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="fas fa-building"></i> Stadium Management</h5>
-                    </div>
-                    <div class="card-body">
-                        <p>Manage stadiums and their capacities</p>
-                        <a href="/admin/stadiums" class="btn btn-primary">
-                            <i class="fas fa-list"></i> View Stadiums
-                        </a>
-                        <a href="/admin/stadiums/new" class="btn btn-success">
-                            <i class="fas fa-plus"></i> Add Stadium
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5><i class="fas fa-futbol"></i> Match Management</h5>
-                    </div>
-                    <div class="card-body">
-                        <p>Create and manage football matches</p>
-                        <a href="/admin/matches" class="btn btn-primary">
-                            <i class="fas fa-list"></i> View Matches
-                        </a>
-                        <a href="/admin/matches/new" class="btn btn-success">
-                            <i class="fas fa-plus"></i> Add Match
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

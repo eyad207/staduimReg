@@ -32,49 +32,33 @@ public class StadiumSectionService {
         return stadiumSectionRepository.save(section);
     }
 
+    public List<StadiumSection> findByStadium(Stadium stadium) {
+        return stadiumSectionRepository.findByStadium(stadium);
+    }
+
+    public List<StadiumSection> getAllSections() {
+        return stadiumSectionRepository.findAll();
+    }
+
+    public void deleteSection(Long id) {
+        stadiumSectionRepository.deleteById(id);
+    }
+
+    public int getAvailableSeatsForSection(StadiumSection section, FootballMatch match) {
+        Integer bookedSeats = sectionBookingRepository.sumTicketsByStadiumSectionAndMatch(section, match);
+        return section.getTotalSeats() - (bookedSeats != null ? bookedSeats : 0);
+    }
+
     public List<SectionBooking> getSectionBookingsForMatch(FootballMatch match) {
-        return sectionBookingRepository.findByFootballMatchOrderBySection(match);
-    }
-
-    public SectionBooking getOrCreateSectionBooking(FootballMatch match, StadiumSection section) {
-        return sectionBookingRepository.findByFootballMatchAndStadiumSection(match, section)
-                .orElseGet(() -> {
-                    SectionBooking sectionBooking = new SectionBooking(match, section);
-                    return sectionBookingRepository.save(sectionBooking);
-                });
-    }
-
-    public boolean canBookSeatsInSection(FootballMatch match, StadiumSection section, int requestedSeats) {
-        SectionBooking sectionBooking = getOrCreateSectionBooking(match, section);
-        return sectionBooking.hasAvailableSeats(requestedSeats);
-    }
-
-    public void bookSeatsInSection(FootballMatch match, StadiumSection section, int seats) {
-        SectionBooking sectionBooking = getOrCreateSectionBooking(match, section);
-        sectionBooking.bookSeats(seats);
-        sectionBookingRepository.save(sectionBooking);
-    }
-
-    public void releaseSeatsInSection(FootballMatch match, StadiumSection section, int seats) {
-        Optional<SectionBooking> sectionBookingOpt =
-            sectionBookingRepository.findByFootballMatchAndStadiumSection(match, section);
-
-        if (sectionBookingOpt.isPresent()) {
-            SectionBooking sectionBooking = sectionBookingOpt.get();
-            sectionBooking.releaseSeats(seats);
-            sectionBookingRepository.save(sectionBooking);
-        }
+        return sectionBookingRepository.findByMatch(match);
     }
 
     public int getAvailableSeatsInSection(FootballMatch match, StadiumSection section) {
-        SectionBooking sectionBooking = getOrCreateSectionBooking(match, section);
-        return sectionBooking.getAvailableSeats();
+        return getAvailableSeatsForSection(section, match);
     }
 
     public void initializeSectionBookingsForMatch(FootballMatch match) {
-        List<StadiumSection> sections = getSectionsByStadium(match.getStadium());
-        for (StadiumSection section : sections) {
-            getOrCreateSectionBooking(match, section);
-        }
+        // This method is simplified - section bookings are created on-demand when actual bookings are made
+        // No need to pre-create them
     }
 }

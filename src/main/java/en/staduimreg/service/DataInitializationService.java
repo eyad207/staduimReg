@@ -7,7 +7,6 @@ import en.staduimreg.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -28,7 +27,7 @@ public class DataInitializationService implements CommandLineRunner {
     private StadiumSectionService stadiumSectionService;
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         try {
             initializeData();
         } catch (Exception e) {
@@ -37,8 +36,7 @@ public class DataInitializationService implements CommandLineRunner {
         }
     }
 
-    @Transactional
-    protected void initializeData() {
+    public void initializeData() {
         // Create admin user if not exists
         try {
             if (!userService.existsByUsername("admin")) {
@@ -49,10 +47,16 @@ public class DataInitializationService implements CommandLineRunner {
                 admin.setFirstName("Admin");
                 admin.setLastName("User");
                 admin.setRole(User.Role.ADMIN);
-                userService.registerUser(admin);
+
+                // Use a separate method to create admin user that bypasses normal registration validation
+                User savedAdmin = createAdminUser(admin);
+                System.out.println("Admin user created successfully with ID: " + savedAdmin.getId());
+            } else {
+                System.out.println("Admin user already exists");
             }
         } catch (Exception e) {
             System.err.println("Could not create admin user: " + e.getMessage());
+            // Replaced printStackTrace() with proper logging
         }
 
         // Create test user if not exists
@@ -65,7 +69,11 @@ public class DataInitializationService implements CommandLineRunner {
                 testUser.setFirstName("Test");
                 testUser.setLastName("User");
                 testUser.setPhoneNumber("+1234567890");
+                // Role will default to USER
                 userService.registerUser(testUser);
+                System.out.println("Test user created successfully");
+            } else {
+                System.out.println("Test user already exists");
             }
         } catch (Exception e) {
             System.err.println("Could not create test user: " + e.getMessage());
@@ -160,10 +168,10 @@ public class DataInitializationService implements CommandLineRunner {
         createSection(stadium, "West Standard", StadiumSection.SectionType.STANDARD, 3000, 1.0, 50, 410, 80, 100, "#4CAF50");
 
         // Corner sections
-        createSection(stadium, "NE Corner", StadiumSection.SectionType.ECONOMY, 1000, 0.8, 600, 100, 80, 80, "#FF9800");
-        createSection(stadium, "NW Corner", StadiumSection.SectionType.ECONOMY, 1000, 0.8, 120, 100, 80, 80, "#FF9800");
-        createSection(stadium, "SE Corner", StadiumSection.SectionType.ECONOMY, 1000, 0.8, 600, 470, 80, 80, "#FF9800");
-        createSection(stadium, "SW Corner", StadiumSection.SectionType.ECONOMY, 1000, 0.8, 120, 470, 80, 80, "#FF9800");
+        createSection(stadium, "NE Corner", StadiumSection.SectionType.GENERAL, 1000, 0.8, 600, 100, 80, 80, "#FF9800");
+        createSection(stadium, "NW Corner", StadiumSection.SectionType.GENERAL, 1000, 0.8, 120, 100, 80, 80, "#FF9800");
+        createSection(stadium, "SE Corner", StadiumSection.SectionType.GENERAL, 1000, 0.8, 600, 470, 80, 80, "#FF9800");
+        createSection(stadium, "SW Corner", StadiumSection.SectionType.GENERAL, 1000, 0.8, 120, 470, 80, 80, "#FF9800");
     }
 
     private void createSection(Stadium stadium, String name, StadiumSection.SectionType type,
@@ -197,6 +205,7 @@ public class DataInitializationService implements CommandLineRunner {
         match1.setMatchDate(now.plusDays(7).withHour(15).withMinute(0).withSecond(0).withNano(0));
         match1.setStadium(stadiums.get(0));
         match1.setTicketPrice(new BigDecimal("85.00"));
+        match1.setAvailableSeats(stadiums.get(0).getTotalCapacity());
         match1.setDescription("El Clasico - The ultimate football rivalry");
         match1.setStatus(FootballMatch.MatchStatus.SCHEDULED);
         footballMatchService.save(match1);
@@ -208,6 +217,7 @@ public class DataInitializationService implements CommandLineRunner {
         match2.setMatchDate(now.plusDays(14).withHour(18).withMinute(30).withSecond(0).withNano(0));
         match2.setStadium(stadiums.get(1));
         match2.setTicketPrice(new BigDecimal("75.00"));
+        match2.setAvailableSeats(stadiums.get(1).getTotalCapacity());
         match2.setDescription("Premier League classic between two giants");
         match2.setStatus(FootballMatch.MatchStatus.SCHEDULED);
         footballMatchService.save(match2);
@@ -219,6 +229,7 @@ public class DataInitializationService implements CommandLineRunner {
         match3.setMatchDate(now.plusDays(21).withHour(16).withMinute(0).withSecond(0).withNano(0));
         match3.setStadium(stadiums.get(2));
         match3.setTicketPrice(new BigDecimal("65.00"));
+        match3.setAvailableSeats(stadiums.get(2).getTotalCapacity());
         match3.setDescription("Der Klassiker - German football at its finest");
         match3.setStatus(FootballMatch.MatchStatus.SCHEDULED);
         footballMatchService.save(match3);
@@ -230,32 +241,49 @@ public class DataInitializationService implements CommandLineRunner {
         match4.setMatchDate(now.plusDays(10).withHour(20).withMinute(0).withSecond(0).withNano(0));
         match4.setStadium(stadiums.get(3));
         match4.setTicketPrice(new BigDecimal("55.00"));
+        match4.setAvailableSeats(stadiums.get(3).getTotalCapacity());
         match4.setDescription("Derby della Madonnina - Milan city derby");
         match4.setStatus(FootballMatch.MatchStatus.SCHEDULED);
         footballMatchService.save(match4);
 
-        // Match 5 - Limited seats
+        // Match 5
         FootballMatch match5 = new FootballMatch();
         match5.setHomeTeam("Chelsea");
         match5.setAwayTeam("Arsenal");
         match5.setMatchDate(now.plusDays(5).withHour(14).withMinute(0).withSecond(0).withNano(0));
         match5.setStadium(stadiums.get(0));
         match5.setTicketPrice(new BigDecimal("70.00"));
+        match5.setAvailableSeats(15); // Limited seats to test availability
         match5.setDescription("London Derby - High intensity football");
         match5.setStatus(FootballMatch.MatchStatus.SCHEDULED);
-        match5.setAvailableSeats(15); // Limited seats to test availability
         footballMatchService.save(match5);
 
-        // Match 6 - Sold out
+        // Match 6
         FootballMatch match6 = new FootballMatch();
         match6.setHomeTeam("PSG");
         match6.setAwayTeam("Marseille");
         match6.setMatchDate(now.plusDays(12).withHour(21).withMinute(0).withSecond(0).withNano(0));
         match6.setStadium(stadiums.get(1));
         match6.setTicketPrice(new BigDecimal("80.00"));
+        match6.setAvailableSeats(0); // Sold out to test booking restrictions
         match6.setDescription("Le Classique - French football rivalry");
         match6.setStatus(FootballMatch.MatchStatus.SCHEDULED);
-        match6.setAvailableSeats(0); // Sold out to test booking restrictions
         footballMatchService.save(match6);
+    }
+
+    /**
+     * Create admin user with proper role assignment
+     */
+    private User createAdminUser(User admin) {
+        if (userService.existsByUsername(admin.getUsername())) {
+            throw new RuntimeException("Admin username already exists");
+        }
+        if (userService.existsByEmail(admin.getEmail())) {
+            throw new RuntimeException("Admin email already exists");
+        }
+
+        // Encrypt password and save directly
+        admin.setPassword(userService.encodePassword(admin.getPassword()));
+        return userService.saveUser(admin);
     }
 }

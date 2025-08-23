@@ -11,6 +11,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.savedrequest.DefaultSavedRequest;
 
 @Configuration
 @EnableWebSecurity
@@ -46,13 +47,38 @@ public class SecurityConfig {
             )
             .formLogin(form -> form
                 .loginPage("/login")
-                .defaultSuccessUrl("/matches", true)
+                .defaultSuccessUrl("/matches")  // Remove the 'true' parameter to allow redirecting to original requested URL
+                .successHandler((request, response, authentication) -> {
+                    // Custom success handler to redirect admins to admin dashboard if they have admin role
+                    String redirectUrl = "/matches"; // default redirect
+
+                    // Check if user has admin role
+                    boolean isAdmin = authentication.getAuthorities().stream()
+                        .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals("ROLE_ADMIN"));
+
+                    // Get the original requested URL from session
+                    DefaultSavedRequest savedRequest = (DefaultSavedRequest) request.getSession().getAttribute("SPRING_SECURITY_SAVED_REQUEST");
+                    String targetUrl = null;
+                    if (savedRequest != null) {
+                        targetUrl = savedRequest.getRedirectUrl();
+                    }
+
+                    if (isAdmin && (targetUrl == null || targetUrl.contains("/admin"))) {
+                        redirectUrl = "/admin";
+                    } else if (targetUrl != null && !targetUrl.contains("/login")) {
+                        redirectUrl = targetUrl;
+                    }
+
+                    response.sendRedirect(redirectUrl);
+                })
                 .failureUrl("/login?error=true")
                 .permitAll()
             )
             .logout(logout -> logout
                 .logoutUrl("/logout")
-                .logoutSuccessUrl("/")
+                .logoutSuccessUrl("/login?logout=true")
+                .invalidateHttpSession(true)
+                .deleteCookies("JSESSIONID")
                 .permitAll()
             );
 

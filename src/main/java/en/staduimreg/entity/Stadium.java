@@ -35,9 +35,6 @@ public class Stadium {
     @OneToMany(mappedBy = "stadium", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<FootballMatch> matches;
 
-    @OneToMany(mappedBy = "stadium", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private Set<StadiumSection> sections;
-
     // Stadium diagram dimensions
     @Column(name = "diagram_width")
     private Integer diagramWidth = 800; // Default diagram width in pixels
@@ -76,9 +73,6 @@ public class Stadium {
 
     public Set<FootballMatch> getMatches() { return matches; }
     public void setMatches(Set<FootballMatch> matches) { this.matches = matches; }
-
-    public Set<StadiumSection> getSections() { return sections; }
-    public void setSections(Set<StadiumSection> sections) { this.sections = sections; }
 
     public Integer getDiagramWidth() { return diagramWidth; }
     public void setDiagramWidth(Integer diagramWidth) { this.diagramWidth = diagramWidth; }

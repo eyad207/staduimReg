@@ -50,9 +50,14 @@ public class AuthController {
             userService.registerUser(user);
             redirectAttributes.addFlashAttribute("success", "Registration successful! Please login.");
             return "redirect:/login";
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             model.addAttribute("error", e.getMessage());
             return "auth/register";
         }
+    }
+
+    @GetMapping("/logout")
+    public String logout() {
+        return "redirect:/login?logout";
     }
 }

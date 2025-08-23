@@ -23,11 +23,7 @@ public class FootballMatchService {
     }
 
     public List<FootballMatch> getAvailableMatches() {
-        return footballMatchRepository.findAvailableMatches(LocalDateTime.now());
-    }
-
-    public List<FootballMatch> getMatchesWithAvailableSeats(int requiredSeats) {
-        return footballMatchRepository.findMatchesWithAvailableSeats(requiredSeats, LocalDateTime.now());
+        return footballMatchRepository.findByMatchDateAfterAndStatus(LocalDateTime.now(), FootballMatch.MatchStatus.SCHEDULED);
     }
 
     public Optional<FootballMatch> findById(Long id) {
@@ -38,6 +34,14 @@ public class FootballMatchService {
         return footballMatchRepository.save(match);
     }
 
+    public void deleteById(Long id) {
+        footballMatchRepository.deleteById(id);
+    }
+
+    public void deleteMatch(Long id) {
+        footballMatchRepository.deleteById(id);
+    }
+
     public List<FootballMatch> findByStadium(Stadium stadium) {
         return footballMatchRepository.findByStadium(stadium);
     }
@@ -46,32 +50,15 @@ public class FootballMatchService {
         return footballMatchRepository.findByMatchDateAfter(LocalDateTime.now());
     }
 
-    public boolean hasAvailableSeats(Long matchId, int requestedSeats) {
-        Optional<FootballMatch> match = findById(matchId);
-        return match.isPresent() && match.get().hasAvailableSeats(requestedSeats);
+    public List<FootballMatch> getMatchesByStatus(FootballMatch.MatchStatus status) {
+        return footballMatchRepository.findByStatus(status);
     }
 
-    public void reserveSeats(Long matchId, int seats) {
-        FootballMatch match = footballMatchRepository.findById(matchId)
-                .orElseThrow(() -> new RuntimeException("Match not found"));
-
-        if (!match.hasAvailableSeats(seats)) {
-            throw new RuntimeException("Not enough available seats");
-        }
-
-        match.reserveSeats(seats);
-        footballMatchRepository.save(match);
+    public List<FootballMatch> getMatchesBetweenDates(LocalDateTime startDate, LocalDateTime endDate) {
+        return footballMatchRepository.findByMatchDateBetween(startDate, endDate);
     }
 
-    public void releaseSeats(Long matchId, int seats) {
-        FootballMatch match = footballMatchRepository.findById(matchId)
-                .orElseThrow(() -> new RuntimeException("Match not found"));
-
-        match.releaseSeats(seats);
-        footballMatchRepository.save(match);
-    }
-
-    public void deleteMatch(Long id) {
-        footballMatchRepository.deleteById(id);
+    public long getTotalMatchesCount() {
+        return footballMatchRepository.count();
     }
 }

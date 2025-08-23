@@ -28,15 +28,23 @@ public class StadiumService {
         return stadiumRepository.save(stadium);
     }
 
+    public void deleteStadium(Long id) {
+        stadiumRepository.deleteById(id);
+    }
+
     public List<Stadium> findByCity(String city) {
         return stadiumRepository.findByCity(city);
     }
 
-    public List<Stadium> searchByName(String name) {
-        return stadiumRepository.findByNameContainingIgnoreCase(name);
+    public Optional<Stadium> findByName(String name) {
+        return stadiumRepository.findByName(name);
     }
 
-    public void deleteStadium(Long id) {
-        stadiumRepository.deleteById(id);
+    public long getTotalStadiumsCount() {
+        return stadiumRepository.count();
+    }
+
+    public List<Stadium> searchStadiums(String searchTerm) {
+        return stadiumRepository.searchStadiums(searchTerm);
     }
 }

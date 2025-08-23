@@ -119,7 +119,15 @@ public class MatchController {
                 return "redirect:/matches/view/" + id;
             }
 
-            Booking booking = bookingService.createBooking(user, match, numberOfSeats);
+            // For general booking, use the first available section
+            List<StadiumSection> sections = stadiumSectionService.findByStadium(match.getStadium());
+            if (sections.isEmpty()) {
+                redirectAttributes.addFlashAttribute("error", "No sections available in this stadium");
+                return "redirect:/matches/view/" + id;
+            }
+
+            StadiumSection firstSection = sections.get(0);
+            Booking booking = bookingService.createBookingWithSection(user, match, firstSection, numberOfSeats);
 
             redirectAttributes.addFlashAttribute("success",
                 "Booking successful! Confirmation code: " + booking.getConfirmationCode());

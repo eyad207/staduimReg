@@ -51,18 +51,11 @@ public class StadiumSection {
     private String color = "#4CAF50"; // Default green color for available sections
 
     public enum SectionType {
-        VIP, PREMIUM, STANDARD, ECONOMY, STANDING
+        VIP, PREMIUM, STANDARD, GENERAL
     }
 
     // Constructors
     public StadiumSection() {}
-
-    public StadiumSection(Stadium stadium, String sectionName, SectionType sectionType, Integer totalSeats) {
-        this.stadium = stadium;
-        this.sectionName = sectionName;
-        this.sectionType = sectionType;
-        this.totalSeats = totalSeats;
-    }
 
     // Getters and Setters
     public Long getId() { return id; }
